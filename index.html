@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Press here to see my face <3</title>
+  <title>Miyvarxar Nitsa</title>
   <style>
     :root{--accent:#0366d6}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
@@ -20,7 +20,7 @@
 </head>
 <body>
   <div class="card">
-    <h1>Press here to see my face <3</h1>
+    <h1>press here to see me</h1>
     <div class="controls">
       <button id="nextBtn" disabled>Press me Mommy</button>
       <button id="resetBtn" disabled>Achexe Fotoebi</button>
@@ -74,28 +74,24 @@
           return;
         }
 
-        // load queue from localStorage
         let queue = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
         if (!Array.isArray(queue)) queue = [];
 
-        // keep only URLs that still exist on the server
         queue = queue.filter(u => serverList.includes(u));
-
-        // append any new images the server has that the queue doesn't
         const newItems = serverList.filter(u => !queue.includes(u));
         if (newItems.length > 0) {
           shuffle(newItems);
           queue = queue.concat(newItems);
         }
 
-        // if queue empty (first run), create shuffled queue
         if (queue.length === 0) {
           queue = serverList.slice();
           shuffle(queue);
         }
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
-        status(`Ready — ${queue.length} image(s) in queue. Click "Press me Mommy".`);
+        // 👇 Custom wording here
+        status(`Shen — ${queue.length} image(s) Gelis`);
         nextBtn.disabled = false;
         resetBtn.disabled = false;
       } catch (err) {
@@ -115,7 +111,7 @@
       const url = queue.shift();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
       photo.src = url;
-      status(`Showing image — ${queue.length} left until reshuffle.`);
+      status(`Shen — ${queue.length} image(s) Gelis`);
     }
 
     function resetQueue(){
@@ -126,7 +122,6 @@
     nextBtn.addEventListener('click', showNext);
     resetBtn.addEventListener('click', resetQueue);
 
-    // initialize on page load
     init();
   </script>
 </body>
