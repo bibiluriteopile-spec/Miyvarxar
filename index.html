@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Random Photo Viewer</title>
+  <title>Press here to see my face <3</title>
   <style>
     :root{--accent:#0366d6}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
@@ -20,10 +20,10 @@
 </head>
 <body>
   <div class="card">
-    <h1>Random Photo Viewer</h1>
+    <h1>Press here to see my face <3</h1>
     <div class="controls">
-      <button id="nextBtn" disabled>Show me a picture</button>
-      <button id="resetBtn" disabled>Reset / Reshuffle</button>
+      <button id="nextBtn" disabled>Press me Mommy</button>
+      <button id="resetBtn" disabled>Achexe Fotoebi</button>
     </div>
     <img id="photo" alt="Your image will appear here" src="" />
     <div id="status" class="small">Loading…</div>
@@ -32,8 +32,8 @@
 
   <script>
     // --- CONFIG: replace these with your values (exact GitHub username and repo name) ---
-    const GITHUB_USER = 'bibiluriteopile-spec';
-    const GITHUB_REPO = 'NK';
+    const GITHUB_USER = 'Miyvarxar';
+    const GITHUB_REPO = 'Miyvarxar';
     const IMAGES_PATH = 'images'; // folder in the repository where you upload pictures
     // -------------------------------------------------------------------------------
 
@@ -95,7 +95,7 @@
         }
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
-        status(`Ready — ${queue.length} image(s) in queue. Click "Show me a picture".`);
+        status(`Ready — ${queue.length} image(s) in queue. Click "Press me Mommy".`);
         nextBtn.disabled = false;
         resetBtn.disabled = false;
       } catch (err) {
