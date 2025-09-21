@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Random Photo Viewer</title>
+  <style>
+    :root{--accent:#0366d6}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+         margin:0;background:#f7f9fc;color:#0b1220;display:flex;min-height:100vh;align-items:center;justify-content:center;}
+    .card{max-width:920px;width:100%;padding:24px;text-align:center;background:white;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.08);}
+    h1{margin:0 0 12px;font-size:20px}
+    #photo{max-width:95%;max-height:68vh;border-radius:8px;display:block;margin:18px auto;background:#eee}
+    .controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+    button{background:var(--accent);color:#fff;border:0;padding:10px 16px;border-radius:8px;font-size:15px;cursor:pointer}
+    button[disabled]{opacity:.5;cursor:default}
+    .muted{color:#445;color:#586069;margin-top:10px;font-size:13px}
+    .small{font-size:13px;color:#666;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Random Photo Viewer</h1>
+    <div class="controls">
+      <button id="nextBtn" disabled>Show me a picture</button>
+      <button id="resetBtn" disabled>Reset / Reshuffle</button>
+    </div>
+    <img id="photo" alt="Your image will appear here" src="" />
+    <div id="status" class="small">Loading…</div>
+    <div class="muted">Images are loaded from the repository folder <code>images/</code>.</div>
+  </div>
+
+  <script>
+    // --- CONFIG: replace these with your values (exact GitHub username and repo name) ---
+    const GITHUB_USER = 'bibiluriteopile-spec';
+    const GITHUB_REPO = 'NK';
+    const IMAGES_PATH = 'images'; // folder in the repository where you upload pictures
+    // -------------------------------------------------------------------------------
+
+    const API_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${IMAGES_PATH}`;
+    const STORAGE_KEY = `imageQueue__${GITHUB_USER}__${GITHUB_REPO}__${IMAGES_PATH}`;
+
+    const nextBtn = document.getElementById('nextBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const photo = document.getElementById('photo');
+    const statusEl = document.getElementById('status');
+
+    function status(msg){ statusEl.textContent = msg; }
+
+    function shuffle(array){
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    async function fetchImageList(){
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error('GitHub API returned ' + res.status + ' — make sure repo is public and path is correct.');
+      const data = await res.json();
+      return data
+        .filter(item => item.type === 'file' && /\.(jpe?g|png|gif|webp|svg)$/i.test(item.name))
+        .map(item => item.download_url);
+    }
+
+    async function init(){
+      status('Loading image list from GitHub...');
+      nextBtn.disabled = true;
+      resetBtn.disabled = true;
+      try {
+        const serverList = await fetchImageList();
+        if (!serverList || serverList.length === 0) {
+          status('No images found in the images/ folder. Upload images into that folder in your repo.');
+          return;
+        }
+
+        // load queue from localStorage
+        let queue = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (!Array.isArray(queue)) queue = [];
+
+        // keep only URLs that still exist on the server
+        queue = queue.filter(u => serverList.includes(u));
+
+        // append any new images the server has that the queue doesn't
+        const newItems = serverList.filter(u => !queue.includes(u));
+        if (newItems.length > 0) {
+          shuffle(newItems);
+          queue = queue.concat(newItems);
+        }
+
+        // if queue empty (first run), create shuffled queue
+        if (queue.length === 0) {
+          queue = serverList.slice();
+          shuffle(queue);
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+        status(`Ready — ${queue.length} image(s) in queue. Click "Show me a picture".`);
+        nextBtn.disabled = false;
+        resetBtn.disabled = false;
+      } catch (err) {
+        console.error(err);
+        status('Error loading images. Check console and confirm repo is public and config variables are set.');
+      }
+    }
+
+    function showNext(){
+      let queue = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      if (!Array.isArray(queue) || queue.length === 0) {
+        status('All images shown — reshuffling...');
+        localStorage.removeItem(STORAGE_KEY);
+        init();
+        return;
+      }
+      const url = queue.shift();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+      photo.src = url;
+      status(`Showing image — ${queue.length} left until reshuffle.`);
+    }
+
+    function resetQueue(){
+      localStorage.removeItem(STORAGE_KEY);
+      init();
+    }
+
+    nextBtn.addEventListener('click', showNext);
+    resetBtn.addEventListener('click', resetQueue);
+
+    // initialize on page load
+    init();
+  </script>
+</body>
+</html>
