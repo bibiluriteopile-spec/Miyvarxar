@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Miyvarxar Nitsa</title>
   <style>
-     body {
+    body {
       font-family: "Comic Sans MS", "Poppins", cursive;
       margin: 0;
       padding: 0;
@@ -32,6 +32,7 @@
       border-radius: 20px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
       display: none;
+      transition: opacity 0.5s;
     }
 
     #message {
@@ -91,6 +92,7 @@
   <script>
     const GITHUB_USER = 'bibiluriteopile-spec';
     const GITHUB_REPO = 'Miyvarxar';
+    const BRANCH = 'main'; // or your default branch
     const NEW_PATH = 'images/new';
     const OLD_PATH = 'images/old';
 
@@ -116,56 +118,56 @@
     }
 
     async function fetchImages(path){
-      const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
+      const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}?ref=${BRANCH}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Error loading ' + path);
       const data = await res.json();
       return data
-        .filter(item => item.type === 'file' && /\.(jpe?g|png|gif|webp|svg)$/i.test(item.name))
+        .filter(item => item.type === 'file' && /\.(jpe?g|png|gif|webp)$/i.test(item.name))
         .map(item => item.download_url);
     }
 
-    async function loadAlbum(path, type){
-      status('Loading ' + type + '…');
+    async function init(){
+      status('Loading New Pictures…');
       try {
-        let list = await fetchImages(path);
-        if (list.length === 0) {
-          status('No ' + type.toLowerCase() + ' found.');
+        newPhotos = await fetchImages(NEW_PATH);
+        oldPhotos = await fetchImages(OLD_PATH);
+
+        if(newPhotos.length === 0 && oldPhotos.length === 0){
+          status('No images found in GitHub repo.');
           return;
         }
-        shuffle(list);
 
-        if(type === 'New Pictures'){
-          newPhotos = list;
-          newIndex = 0;
-          photo.src = newPhotos[newIndex++];
-        } else {
-          oldPhotos = list;
-          oldIndex = 0;
-          photo.src = oldPhotos[oldIndex++];
-        }
+        shuffle(newPhotos);
+        shuffle(oldPhotos);
 
-        photo.style.display = 'block'; // show the image
-        messageEl.textContent = '';
-        status(`Shen — ${list.length} ${type} Gelis`);
-      } catch(err) {
+        newBtn.disabled = false;
+        oldBtn.disabled = false;
+        status('Ready');
+      } catch(err){
         console.error(err);
-        status('Error loading ' + type);
+        status('Error fetching images. Check repo/folder permissions.');
       }
     }
 
-    newBtn.addEventListener('click', () => {
-      if(newIndex >= newPhotos.length) newIndex = 0;
-      photo.src = newPhotos[newIndex++];
+    function showPhoto(list, index){
+      photo.src = list[index];
       photo.style.display = 'block';
       messageEl.textContent = '';
+    }
+
+    newBtn.addEventListener('click', () => {
+      if(newPhotos.length === 0) return;
+      showPhoto(newPhotos, newIndex);
+      newIndex = (newIndex + 1) % newPhotos.length;
+      statusEl.textContent = `Showing New Picture ${newIndex} / ${newPhotos.length}`;
     });
 
     oldBtn.addEventListener('click', () => {
-      if(oldIndex >= oldPhotos.length) oldIndex = 0;
-      photo.src = oldPhotos[oldIndex++];
-      photo.style.display = 'block';
-      messageEl.textContent = '';
+      if(oldPhotos.length === 0) return;
+      showPhoto(oldPhotos, oldIndex);
+      oldIndex = (oldIndex + 1) % oldPhotos.length;
+      statusEl.textContent = `Showing Old Picture ${oldIndex} / ${oldPhotos.length}`;
     });
 
     msgBtn.addEventListener('click', () => {
@@ -175,24 +177,11 @@
         '💖 You are loved 💖'
       ];
       messageEl.textContent = messages[Math.floor(Math.random() * messages.length)];
-      photo.src = '';
       photo.style.display = 'none';
-      status('');
+      statusEl.textContent = '';
     });
 
-    async function init(){
-      try {
-        await fetchImages(NEW_PATH);
-        await fetchImages(OLD_PATH);
-        newBtn.disabled = false;
-        oldBtn.disabled = false;
-        status('Ready');
-      } catch {
-        status('Check that repo and folders exist and are public.');
-      }
-    }
-
-    init();
+    window.onload = init;
   </script>
 </body>
 </html>
