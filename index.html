@@ -6,87 +6,89 @@
   <title>Miyvarxar Nitsa</title>
   <style>
      body {
-  font-family: "Comic Sans MS", "Poppins", cursive;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh; /* full viewport height */
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* vertical centering */
-  align-items: center;     /* horizontal centering */
-  background: linear-gradient(135deg, #FFB3C6, #B3E0FF, #B3FFC9);
-  color: #444;
-  text-align: center;      /* center text inside divs */
-}
+      font-family: "Comic Sans MS", "Poppins", cursive;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #FFB3C6, #B3E0FF, #B3FFC9);
+      color: #444;
+      text-align: center;
+    }
 
-h1 {
-  margin: 20px 0;
-  font-size: 2.2em;
-  color: #ff66a3;
-  text-shadow: 1px 1px #fff;
-}
+    h1 {
+      margin: 20px 0;
+      font-size: 2.2em;
+      color: #ff66a3;
+      text-shadow: 1px 1px #fff;
+    }
 
-#photo {
-  margin: 20px auto;
-  max-width: 85%;
-  border-radius: 20px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-  display: none;
-}
+    #photo {
+      margin: 20px auto;
+      max-width: 85%;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      display: none;
+    }
 
-#message {
-  margin-top: 15px;
-  font-size: 1.3em;
-  color: #ff80bf;
-  font-weight: bold;
-}
+    #message {
+      margin-top: 15px;
+      font-size: 1.3em;
+      color: #ff80bf;
+      font-weight: bold;
+    }
 
-.button-container {
-  margin-top: 25px;
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  flex-wrap: wrap;
-}
+    .button-container {
+      margin-top: 25px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
 
-button {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 30px;
-  font-size: 1.1em;
-  cursor: pointer;
-  background: #FF69B4;
-  color: white;
-  box-shadow: 0 5px 12px rgba(255, 182, 193, 0.5);
-  transition: transform 0.2s, background 0.3s;
-}
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 30px;
+      font-size: 1.1em;
+      cursor: pointer;
+      background: #FF69B4;
+      color: white;
+      box-shadow: 0 5px 12px rgba(255, 182, 193, 0.5);
+      transition: transform 0.2s, background 0.3s;
+    }
 
-button:hover {
-  background: #FF85C1;
-  transform: translateY(-2px);
-}
+    button:hover {
+      background: #FF85C1;
+      transform: translateY(-2px);
+    }
 
-button:active {
-  transform: translateY(1px);
-}
+    button:active {
+      transform: translateY(1px);
+    }
 
+    #status {
+      margin-top: 10px;
+      font-size: 0.9em;
+      color: #666;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>მიყვარხარ</h1>
-    <div class="controls">
-      <button id="newBtn" disabled>New collection</button>
-      <button id="oldBtn" disabled>Old Pictures</button>
-      <button id="msgBtn">Press For LoveBombing</button>
-    </div>
-    <img id="photo" alt="Your image will appear here" src="" />
-    <div id="status" class="small">Loading…</div>
-    <div id="message"></div>
+  <h1>მიყვარხარ</h1>
+  <div class="button-container">
+    <button id="newBtn" disabled>New collection</button>
+    <button id="oldBtn" disabled>Old Pictures</button>
+    <button id="msgBtn">Press For LoveBombing</button>
   </div>
+  <img id="photo" alt="Your image will appear here" src="" />
+  <div id="status">Loading…</div>
+  <div id="message"></div>
 
   <script>
-    // CONFIG
     const GITHUB_USER = 'bibiluriteopile-spec';
     const GITHUB_REPO = 'Miyvarxar';
     const NEW_PATH = 'images/new';
@@ -98,6 +100,11 @@ button:active {
     const newBtn = document.getElementById('newBtn');
     const oldBtn = document.getElementById('oldBtn');
     const msgBtn = document.getElementById('msgBtn');
+
+    let newPhotos = [];
+    let oldPhotos = [];
+    let newIndex = 0;
+    let oldIndex = 0;
 
     function status(msg){ statusEl.textContent = msg; }
 
@@ -118,36 +125,64 @@ button:active {
         .map(item => item.download_url);
     }
 
-    async function loadAlbum(path, label){
-      status('Loading ' + label + '…');
+    async function loadAlbum(path, type){
+      status('Loading ' + type + '…');
       try {
         let list = await fetchImages(path);
         if (list.length === 0) {
-          status('No ' + label.toLowerCase() + ' found.');
+          status('No ' + type.toLowerCase() + ' found.');
           return;
         }
         shuffle(list);
-        const url = list.shift();
-        photo.src = url;
+
+        if(type === 'New Pictures'){
+          newPhotos = list;
+          newIndex = 0;
+          photo.src = newPhotos[newIndex++];
+        } else {
+          oldPhotos = list;
+          oldIndex = 0;
+          photo.src = oldPhotos[oldIndex++];
+        }
+
+        photo.style.display = 'block'; // show the image
         messageEl.textContent = '';
-        status(`Shen — ${list.length} ${label} Gelis`);
-      } catch (err) {
+        status(`Shen — ${list.length} ${type} Gelis`);
+      } catch(err) {
         console.error(err);
-        status('Error loading ' + label);
+        status('Error loading ' + type);
       }
     }
 
-    newBtn.addEventListener('click', () => loadAlbum(NEW_PATH, 'New Pictures'));
-    oldBtn.addEventListener('click', () => loadAlbum(OLD_PATH, 'Old Pictures'));
+    newBtn.addEventListener('click', () => {
+      if(newIndex >= newPhotos.length) newIndex = 0;
+      photo.src = newPhotos[newIndex++];
+      photo.style.display = 'block';
+      messageEl.textContent = '';
+    });
+
+    oldBtn.addEventListener('click', () => {
+      if(oldIndex >= oldPhotos.length) oldIndex = 0;
+      photo.src = oldPhotos[oldIndex++];
+      photo.style.display = 'block';
+      messageEl.textContent = '';
+    });
+
     msgBtn.addEventListener('click', () => {
-      messageEl.textContent = '💌 You are my whole universe 🌌';
+      const messages = [
+        '💌 You are my whole universe 🌌',
+        '🌸 You make me so happy 🌸',
+        '💖 You are loved 💖'
+      ];
+      messageEl.textContent = messages[Math.floor(Math.random() * messages.length)];
       photo.src = '';
+      photo.style.display = 'none';
       status('');
     });
 
     async function init(){
       try {
-        await fetchImages(NEW_PATH); // just to test access
+        await fetchImages(NEW_PATH);
         await fetchImages(OLD_PATH);
         newBtn.disabled = false;
         oldBtn.disabled = false;
