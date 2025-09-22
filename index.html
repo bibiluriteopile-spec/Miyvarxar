@@ -1,11 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cute Photo Viewer</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Miyvarxar Nitsa</title>
   <style>
-    body {
       font-family: "Comic Sans MS", "Poppins", cursive;
       text-align: center;
       margin: 0;
@@ -60,59 +59,91 @@
   </style>
 </head>
 <body>
-  <h1>✨ Cute Photo Viewer ✨</h1>
-
-  <div class="button-container">
-    <button onclick="showImage('new')">New Photos</button>
-    <button onclick="showImage('old')">Old Photos</button>
-    <button onclick="showMessage()">Special Message</button>
+  <div class="card">
+    <h1>press here to see me</h1>
+    <div class="controls">
+      <button id="newBtn" disabled>New Pictures</button>
+      <button id="oldBtn" disabled>Old Pictures</button>
+      <button id="msgBtn">Show Message</button>
+    </div>
+    <img id="photo" alt="Your image will appear here" src="" />
+    <div id="status" class="small">Loading…</div>
+    <div id="message"></div>
   </div>
 
-  <img id="photo" src="" alt="Photo">
-  <div id="message"></div>
-
   <script>
-    const newPhotos = [
-      'images/new/photo1.jpg',
-      'images/new/photo2.jpg'
-    ];
-    const oldPhotos = [
-      'images/old/photo1.jpg',
-      'images/old/photo2.jpg'
-    ];
+    // CONFIG
+    const GITHUB_USER = 'YOUR_GITHUB_USERNAME';
+    const GITHUB_REPO = 'YOUR_REPOSITORY_NAME';
+    const NEW_PATH = 'images/new';
+    const OLD_PATH = 'images/old';
 
-    let newIndex = 0;
-    let oldIndex = 0;
+    const photo = document.getElementById('photo');
+    const statusEl = document.getElementById('status');
+    const messageEl = document.getElementById('message');
+    const newBtn = document.getElementById('newBtn');
+    const oldBtn = document.getElementById('oldBtn');
+    const msgBtn = document.getElementById('msgBtn');
 
-    function showImage(type) {
-      const photoEl = document.getElementById('photo');
-      const messageEl = document.getElementById('message');
-      messageEl.textContent = '';
+    function status(msg){ statusEl.textContent = msg; }
 
-      let photo = '';
-      if (type === 'new') {
-        photo = newPhotos[newIndex % newPhotos.length];
-        newIndex++;
-      } else {
-        photo = oldPhotos[oldIndex % oldPhotos.length];
-        oldIndex++;
+    function shuffle(array){
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
       }
-
-      photoEl.src = photo;
-      photoEl.style.display = 'block';
     }
 
-    function showMessage() {
-      const messages = [
-        '💖 You are loved 💖',
-        '🌸 Smile, you are amazing 🌸',
-        '⭐ You light up the world ⭐'
-      ];
-      const messageEl = document.getElementById('message');
-      const photoEl = document.getElementById('photo');
-      photoEl.style.display = 'none';
-      messageEl.textContent = messages[Math.floor(Math.random() * messages.length)];
+    async function fetchImages(path){
+      const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Error loading ' + path);
+      const data = await res.json();
+      return data
+        .filter(item => item.type === 'file' && /\.(jpe?g|png|gif|webp|svg)$/i.test(item.name))
+        .map(item => item.download_url);
     }
+
+    async function loadAlbum(path, label){
+      status('Loading ' + label + '…');
+      try {
+        let list = await fetchImages(path);
+        if (list.length === 0) {
+          status('No ' + label.toLowerCase() + ' found.');
+          return;
+        }
+        shuffle(list);
+        const url = list.shift();
+        photo.src = url;
+        messageEl.textContent = '';
+        status(`Shen — ${list.length} ${label} Gelis`);
+      } catch (err) {
+        console.error(err);
+        status('Error loading ' + label);
+      }
+    }
+
+    newBtn.addEventListener('click', () => loadAlbum(NEW_PATH, 'New Pictures'));
+    oldBtn.addEventListener('click', () => loadAlbum(OLD_PATH, 'Old Pictures'));
+    msgBtn.addEventListener('click', () => {
+      messageEl.textContent = '💌 You are my whole universe 🌌';
+      photo.src = '';
+      status('');
+    });
+
+    async function init(){
+      try {
+        await fetchImages(NEW_PATH); // just to test access
+        await fetchImages(OLD_PATH);
+        newBtn.disabled = false;
+        oldBtn.disabled = false;
+        status('Ready');
+      } catch {
+        status('Check that repo and folders exist and are public.');
+      }
+    }
+
+    init();
   </script>
 </body>
 </html>
