@@ -14,36 +14,36 @@
     .controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
     button{background:var(--accent);color:#fff;border:0;padding:10px 16px;border-radius:8px;font-size:15px;cursor:pointer}
     button[disabled]{opacity:.5;cursor:default}
-    .muted{color:#445;color:#586069;margin-top:10px;font-size:13px}
     .small{font-size:13px;color:#666;margin-top:8px}
+    #message{margin-top:16px;font-size:18px;color:#222;font-weight:500}
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Press here to see me bb</h1>
+    <h1>press here to see me</h1>
     <div class="controls">
-      <button id="nextBtn" disabled>Press me Mommy</button>
-      <button id="resetBtn" disabled>Achexe Fotoebi</button>
+      <button id="newBtn" disabled>New Pictures</button>
+      <button id="oldBtn" disabled>Old Pictures</button>
+      <button id="msgBtn">Show Message</button>
     </div>
     <img id="photo" alt="Your image will appear here" src="" />
     <div id="status" class="small">Loading…</div>
-    <div class="muted">Images are loaded from the repository folder <code>images/</code>.</div>
+    <div id="message"></div>
   </div>
 
   <script>
-    // --- CONFIG: replace these with your values (exact GitHub username and repo name) ---
+    // CONFIG
     const GITHUB_USER = 'bibiluriteopile-spec';
     const GITHUB_REPO = 'Miyvarxar';
-    const IMAGES_PATH = 'images'; // folder in the repository where you upload pictures
-    // -------------------------------------------------------------------------------
+    const NEW_PATH = 'images/new';
+    const OLD_PATH = 'images/old';
 
-    const API_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${IMAGES_PATH}`;
-    const STORAGE_KEY = `imageQueue__${GITHUB_USER}__${GITHUB_REPO}__${IMAGES_PATH}`;
-
-    const nextBtn = document.getElementById('nextBtn');
-    const resetBtn = document.getElementById('resetBtn');
     const photo = document.getElementById('photo');
     const statusEl = document.getElementById('status');
+    const messageEl = document.getElementById('message');
+    const newBtn = document.getElementById('newBtn');
+    const oldBtn = document.getElementById('oldBtn');
+    const msgBtn = document.getElementById('msgBtn');
 
     function status(msg){ statusEl.textContent = msg; }
 
@@ -54,73 +54,54 @@
       }
     }
 
-    async function fetchImageList(){
-      const res = await fetch(API_URL);
-      if (!res.ok) throw new Error('GitHub API returned ' + res.status + ' — make sure repo is public and path is correct.');
+    async function fetchImages(path){
+      const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Error loading ' + path);
       const data = await res.json();
       return data
         .filter(item => item.type === 'file' && /\.(jpe?g|png|gif|webp|svg)$/i.test(item.name))
         .map(item => item.download_url);
     }
 
-    async function init(){
-      status('Loading image list from GitHub...');
-      nextBtn.disabled = true;
-      resetBtn.disabled = true;
+    async function loadAlbum(path, label){
+      status('Loading ' + label + '…');
       try {
-        const serverList = await fetchImageList();
-        if (!serverList || serverList.length === 0) {
-          status('No images found in the images/ folder. Upload images into that folder in your repo.');
+        let list = await fetchImages(path);
+        if (list.length === 0) {
+          status('No ' + label.toLowerCase() + ' found.');
           return;
         }
-
-        let queue = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-        if (!Array.isArray(queue)) queue = [];
-
-        queue = queue.filter(u => serverList.includes(u));
-        const newItems = serverList.filter(u => !queue.includes(u));
-        if (newItems.length > 0) {
-          shuffle(newItems);
-          queue = queue.concat(newItems);
-        }
-
-        if (queue.length === 0) {
-          queue = serverList.slice();
-          shuffle(queue);
-        }
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
-        // 👇 Custom wording here
-        status(`Shen — ${queue.length} image(s) Gelis`);
-        nextBtn.disabled = false;
-        resetBtn.disabled = false;
+        shuffle(list);
+        const url = list.shift();
+        photo.src = url;
+        messageEl.textContent = '';
+        status(`Shen — ${list.length} ${label} Gelis`);
       } catch (err) {
         console.error(err);
-        status('Error loading images. Check console and confirm repo is public and config variables are set.');
+        status('Error loading ' + label);
       }
     }
 
-    function showNext(){
-      let queue = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      if (!Array.isArray(queue) || queue.length === 0) {
-        status('All images shown — reshuffling...');
-        localStorage.removeItem(STORAGE_KEY);
-        init();
-        return;
+    newBtn.addEventListener('click', () => loadAlbum(NEW_PATH, 'New Pictures'));
+    oldBtn.addEventListener('click', () => loadAlbum(OLD_PATH, 'Old Pictures'));
+    msgBtn.addEventListener('click', () => {
+      messageEl.textContent = '💌 You are my whole universe 🌌';
+      photo.src = '';
+      status('');
+    });
+
+    async function init(){
+      try {
+        await fetchImages(NEW_PATH); // just to test access
+        await fetchImages(OLD_PATH);
+        newBtn.disabled = false;
+        oldBtn.disabled = false;
+        status('Ready');
+      } catch {
+        status('Check that repo and folders exist and are public.');
       }
-      const url = queue.shift();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
-      photo.src = url;
-      status(`Shen — ${queue.length} image(s) Gelis`);
     }
-
-    function resetQueue(){
-      localStorage.removeItem(STORAGE_KEY);
-      init();
-    }
-
-    nextBtn.addEventListener('click', showNext);
-    resetBtn.addEventListener('click', resetQueue);
 
     init();
   </script>
